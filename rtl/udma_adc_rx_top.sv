@@ -1,12 +1,13 @@
 
 
 module udma_adc_rx_top #(
-  parameter L2_AWIDTH_NOAL = 12,
-  parameter TRANS_SIZE     = 16,
-  parameter ADC_DATA_WIDTH = 32,
-  parameter ADC_NUM_CHS    = 8,
-  parameter CH_ID_LSB      = 28,
-  parameter CH_ID_WIDTH    = 4  )
+  parameter L2_AWIDTH_NOAL  = 12,
+  parameter UDMA_TRANS_SIZE = 16,
+  parameter TRANS_SIZE      = 16,
+  parameter ADC_DATA_WIDTH  = 32,
+  parameter ADC_NUM_CHS     = 8,
+  parameter CH_ID_LSB       = 28,
+  parameter CH_ID_WIDTH     = 4  )
 (
   input  logic                      sys_clk_i,      // master clock
   input  logic                      periph_clk_i,   // master clock
@@ -19,20 +20,20 @@ module udma_adc_rx_top #(
   output logic               [31:0] cfg_data_o,
   output logic                      cfg_ready_o,
 
-  output logic [ADC_NUM_CHS-1:0][L2_AWIDTH_NOAL-1:0] cfg_rx_startaddr_o,
-  output logic [ADC_NUM_CHS-1:0]    [TRANS_SIZE-1:0] cfg_rx_size_o,
-  output logic [ADC_NUM_CHS-1:0]                     cfg_rx_continuous_o,
-  output logic [ADC_NUM_CHS-1:0]                     cfg_rx_en_o,
-  output logic [ADC_NUM_CHS-1:0]                     cfg_rx_clr_o,
-  input  logic [ADC_NUM_CHS-1:0]                     cfg_rx_en_i,
-  input  logic [ADC_NUM_CHS-1:0]                     cfg_rx_pending_i,
-  input  logic [ADC_NUM_CHS-1:0][L2_AWIDTH_NOAL-1:0] cfg_rx_curr_addr_i,
-  input  logic [ADC_NUM_CHS-1:0]    [TRANS_SIZE-1:0] cfg_rx_bytes_left_i,
+  output logic [ADC_NUM_CHS-1:0] [L2_AWIDTH_NOAL-1:0] cfg_rx_startaddr_o,
+  output logic [ADC_NUM_CHS-1:0][UDMA_TRANS_SIZE-1:0] cfg_rx_size_o,
+  output logic [ADC_NUM_CHS-1:0]                      cfg_rx_continuous_o,
+  output logic [ADC_NUM_CHS-1:0]                      cfg_rx_en_o,
+  output logic [ADC_NUM_CHS-1:0]                      cfg_rx_clr_o,
+  input  logic [ADC_NUM_CHS-1:0]                      cfg_rx_en_i,
+  input  logic [ADC_NUM_CHS-1:0]                      cfg_rx_pending_i,
+  input  logic [ADC_NUM_CHS-1:0] [L2_AWIDTH_NOAL-1:0] cfg_rx_curr_addr_i,
+  input  logic [ADC_NUM_CHS-1:0][UDMA_TRANS_SIZE-1:0] cfg_rx_bytes_left_i,
               
-  output logic [ADC_NUM_CHS-1:0]               [1:0] data_rx_datasize_o,
-  output logic [ADC_NUM_CHS-1:0]              [31:0] data_rx_o,
-  output logic [ADC_NUM_CHS-1:0]                     data_rx_valid_o,
-  input  logic [ADC_NUM_CHS-1:0]                     data_rx_ready_i,
+  output logic [ADC_NUM_CHS-1:0]                [1:0] data_rx_datasize_o,
+  output logic [ADC_NUM_CHS-1:0]               [31:0] data_rx_o,
+  output logic [ADC_NUM_CHS-1:0]                      data_rx_valid_o,
+  input  logic [ADC_NUM_CHS-1:0]                      data_rx_ready_i,
 
   // ADC signals
   input  logic                      adc_rx_valid_async_i,
@@ -86,7 +87,7 @@ module udma_adc_rx_top #(
     if (ADC_NUM_CHS == 1) begin
       always_comb begin
         adc_udma_valid_SN = adc_udma_valid_SP;
-        
+
         if (adc_vld_edge)
           adc_udma_valid_SN[0] = 1'b1;
         else if (data_rx_ready_i[0])
@@ -120,9 +121,10 @@ module udma_adc_rx_top #(
 
 
   udma_adc_rx_reg_if #(
-    .L2_AWIDTH_NOAL ( L2_AWIDTH_NOAL ),
-    .TRANS_SIZE     ( TRANS_SIZE     ),
-    .ADC_NUM_CHS    ( ADC_NUM_CHS    )
+    .L2_AWIDTH_NOAL  ( L2_AWIDTH_NOAL  ),
+    .UDMA_TRANS_SIZE ( UDMA_TRANS_SIZE ),
+    .TRANS_SIZE      ( TRANS_SIZE      ),
+    .ADC_NUM_CHS     ( ADC_NUM_CHS     )
   ) udma_adc_rx_reg_if_i
   (
     .clk_i               ( sys_clk_i            ),

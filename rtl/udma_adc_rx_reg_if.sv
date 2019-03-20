@@ -30,9 +30,10 @@
 `define REG_SINGLE_CH    3'b100 //BASEADDR+0x10
 
 module udma_adc_rx_reg_if #(
-    parameter L2_AWIDTH_NOAL = 12,
-    parameter TRANS_SIZE     = 16,
-    parameter ADC_NUM_CHS    = 8
+    parameter L2_AWIDTH_NOAL  = 12,
+    parameter UDMA_TRANS_SIZE = 16,
+    parameter TRANS_SIZE      = 16,
+    parameter ADC_NUM_CHS     = 8
 ) (
 	input  logic 	                  clk_i,
 	input  logic   	                  rstn_i,
@@ -44,16 +45,16 @@ module udma_adc_rx_reg_if #(
     output logic               [31:0] cfg_data_o,
 	output logic                      cfg_ready_o,
 
-    output logic [ADC_NUM_CHS-1:0][L2_AWIDTH_NOAL-1:0] cfg_rx_startaddr_o,
-    output logic [ADC_NUM_CHS-1:0]    [TRANS_SIZE-1:0] cfg_rx_size_o,
-    output logic [ADC_NUM_CHS-1:0]               [1:0] cfg_rx_datasize_o,
-    output logic [ADC_NUM_CHS-1:0]                     cfg_rx_continuous_o,
-    output logic [ADC_NUM_CHS-1:0]                     cfg_rx_en_o,
-    output logic [ADC_NUM_CHS-1:0]                     cfg_rx_clr_o,
-    input  logic [ADC_NUM_CHS-1:0]                     cfg_rx_en_i,
-    input  logic [ADC_NUM_CHS-1:0]                     cfg_rx_pending_i,
-    input  logic [ADC_NUM_CHS-1:0][L2_AWIDTH_NOAL-1:0] cfg_rx_curr_addr_i,
-    input  logic [ADC_NUM_CHS-1:0]    [TRANS_SIZE-1:0] cfg_rx_bytes_left_i,
+    output logic [ADC_NUM_CHS-1:0] [L2_AWIDTH_NOAL-1:0] cfg_rx_startaddr_o,
+    output logic [ADC_NUM_CHS-1:0][UDMA_TRANS_SIZE-1:0] cfg_rx_size_o,
+    output logic [ADC_NUM_CHS-1:0]                [1:0] cfg_rx_datasize_o,
+    output logic [ADC_NUM_CHS-1:0]                      cfg_rx_continuous_o,
+    output logic [ADC_NUM_CHS-1:0]                      cfg_rx_en_o,
+    output logic [ADC_NUM_CHS-1:0]                      cfg_rx_clr_o,
+    input  logic [ADC_NUM_CHS-1:0]                      cfg_rx_en_i,
+    input  logic [ADC_NUM_CHS-1:0]                      cfg_rx_pending_i,
+    input  logic [ADC_NUM_CHS-1:0] [L2_AWIDTH_NOAL-1:0] cfg_rx_curr_addr_i,
+    input  logic [ADC_NUM_CHS-1:0][UDMA_TRANS_SIZE-1:0] cfg_rx_bytes_left_i,
 
     output logic cfg_single_ch_mode_o
 );
@@ -77,12 +78,19 @@ module udma_adc_rx_reg_if #(
     assign s_ch_sel_r  = (cfg_valid_i &  cfg_rwn_i) ? cfg_addr_i[7:3] : 'h0;
 
     assign cfg_rx_startaddr_o   = r_rx_startaddr;
-    assign cfg_rx_size_o        = r_rx_size;
     assign cfg_rx_datasize_o    = {ADC_NUM_CHS{2'b10}};
     assign cfg_rx_continuous_o  = r_rx_continuous;
     assign cfg_rx_en_o          = r_rx_en;
     assign cfg_rx_clr_o         = r_rx_clr;
     assign cfg_single_ch_mode_o = r_single_ch_mode;
+
+    generate
+        for (genvar I=0; I<ADC_NUM_CHS; I++) begin
+            assign cfg_rx_size_o[I][TRANS_SIZE-1:0] = r_rx_size[I];
+            if (UDMA_TRANS_SIZE > TRANS_SIZE)
+                assign cfg_rx_size_o[I][UDMA_TRANS_SIZE-1:TRANS_SIZE] = '0;
+        end
+    endgenerate
 
     always_ff @(posedge clk_i, negedge rstn_i) begin
         if(~rstn_i) begin
@@ -92,7 +100,7 @@ module udma_adc_rx_reg_if #(
             r_rx_continuous <=  'h0;
             r_rx_en          =  'h0;
             r_rx_clr         =  'h0;
-            r_single_ch_mode = 1'b0;
+            r_single_ch_mode <= 1'b0;
         end 
         else begin
             r_rx_en          =  'h0;
@@ -124,7 +132,7 @@ module udma_adc_rx_reg_if #(
             `REG_RX_SADDR:
                 cfg_data_o = cfg_rx_curr_addr_i[s_ch_sel_r];
             `REG_RX_SIZE:
-                cfg_data_o[TRANS_SIZE-1:0] = cfg_rx_bytes_left_i[s_ch_sel_r];
+                cfg_data_o[UDMA_TRANS_SIZE-1:0] = cfg_rx_bytes_left_i[s_ch_sel_r];
             `REG_RX_CFG:
                 cfg_data_o = {26'h0,cfg_rx_pending_i[s_ch_sel_r],cfg_rx_en_i[s_ch_sel_r],1'b0,2'b10,r_rx_continuous[s_ch_sel_r]};
             `REG_SINGLE_CH:
